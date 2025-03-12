@@ -5,13 +5,29 @@
 // @description  ucertify quiz helper script to highlight correct answers
 // @author       0guanhua0@gmail.com
 // @include      *ucertify*
-// @require      https://gitlab.com/0guanhua0/ucertify-quiz-helper/-/raw/main/db.js?ref_type=heads
+// @require      https://raw.githubusercontent.com/Prehax/ucertify-helper-a/refs/heads/25.3-dev/db.js
 // ==/UserScript==
 
 (function () {
   "use strict";
 
   let alreadyRun = false;
+
+  /**
+* Debounce, prevent multiple run
+* @param {Function} func - function need to run
+* @param {number} delay - delay milliseconds
+* @returns {Function} - new debounced function
+*/
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      clearTimeout(timeoutId); // clear timer
+      timeoutId = setTimeout(() => {
+        func.apply(this, args); // run function delayed
+      }, delay);
+    };
+  }
 
   function normalizeText(text) {
     return text
@@ -92,12 +108,15 @@
   }
 
   // Observe DOM changes
+  const debouncedRunHelper = debounce(runHelper, 300);
+
+  // rerun if page refreshed, debounced 
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        alreadyRun = false; // Reset the alreadyRun flag
-        console.log("New content loaded, running quiz logic");
-        runHelper();
+        alreadyRun = false;
+        console.log("New content loaded, running quiz logic (debounced)");
+        debouncedRunHelper();
       }
     });
   });
