@@ -13,23 +13,49 @@
 
   let alreadyRun = false;
 
+  /**
+ * 防抖函数
+ * @param {Function} func - 需要防抖的函数
+ * @param {number} delay - 延迟时间（毫秒）
+ * @returns {Function} - 返回一个防抖后的函数
+ */
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      clearTimeout(timeoutId); // 清除之前的定时器
+      timeoutId = setTimeout(() => {
+        func.apply(this, args); // 延迟执行函数
+      }, delay);
+    };
+  }
+
+  function printLocalStorage() {
+    const storageObject = {};
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      let value = localStorage.getItem(key);
+
+      try {
+        value = JSON.parse(value); // 尝试解析 JSON
+      } catch (e) {
+        // 如果解析失败，说明是普通字符串，保持原样
+      }
+
+      storageObject[key] = value;
+    }
+
+    console.log(JSON.stringify(storageObject, null, 2));
+  }
+
   function normalizeText(text) {
     return text
       .replace(/ /g, " ")
       .replace(/–/g, "-")
+      .replace(/−/g, "-")
       .replace(/’/g, "'")
       .replace(/“/g, '"')
       .replace(/”/g, '"');
-  }
-
-  // find a quiz key that matches part of the question
-  function matchKey(question, quiz) {
-    for (let key in quiz) {
-      if (question.includes(key)) {
-        return key;
-      }
-    }
-    return null;
   }
 
   // Main logic to run quiz helper
@@ -50,33 +76,57 @@
 
     let question = questionElement.innerText.trim();
     question = normalizeText(question);
+
+    // this is question
     console.log(question);
 
-    // Find a quiz key that matches part of the question
-    const matchingKey = matchKey(question, quiz);
-
     // get answer
+    let answers = [];
     const elements = document.querySelectorAll("#item_answer seq");
     for (let element of elements) {
       let text = element.innerText.trim();
       text = normalizeText(text);
+      // this is answer list
       console.log(text);
+      answers.push(text)
     }
 
-    if (!matchingKey) {
-      console.log("no match in db");
-      console.log(
-        "issue: https://gitlab.com/0guanhua0/ucertify-quiz-helper/-/issues",
+    // Check ans-alert
+    const ansAlert = document.getElementById('ans-alert');
+
+    if (ansAlert) {
+      console.log("This is in review page, update quiz db");
+
+      const correctMarkers = [
+        "and this is marked as correct",
+        "and this is correct answer"
+      ];
+
+      // got correct answers
+      const correctAnswers = answers.filter(answer =>
+        correctMarkers.some(marker => answer.includes(marker))
       );
-      console.log(
-        "issue: https://github.com/0guanhua0/ucertify-quiz-helper/issues",
-      );
-      console.log("email: 0guanhua0@gmail.com");
-      return;
+
+      // delete the marker
+      const cleanedAnswers = correctAnswers.map(answer => {
+        for (const marker of correctMarkers) {
+          if (answer.includes(marker)) {
+            return answer.replace(new RegExp(`${marker}`), "").trim();
+          }
+        }
+        return answer;
+      });
+
+      console.log("correct answers are:", cleanedAnswers);
+      // quiz[question] = cleanedAnswers;
+      if (!localStorage.getItem(question)) {
+        localStorage.setItem(question, JSON.stringify(cleanedAnswers));
+        printLocalStorage();
+      }
     }
 
     // highlight correct answer
-    const ans = quiz[matchingKey];
+    let ans = JSON.parse(localStorage.getItem(question));
     ans.forEach((value) => {
       for (let element of elements) {
         let text = element.innerText.trim();
@@ -90,13 +140,15 @@
     });
   }
 
-  // Observe DOM changes
+  const debouncedRunHelper = debounce(runHelper, 300);
+
+  // 在 MutationObserver 中使用防抖函数
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        alreadyRun = false; // Reset the alreadyRun flag
-        console.log("New content loaded, running quiz logic");
-        runHelper();
+        alreadyRun = false; // 重置 alreadyRun 标志
+        console.log("New content loaded, running quiz logic (debounced)");
+        debouncedRunHelper(); // 使用防抖函数
       }
     });
   });
