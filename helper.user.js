@@ -6,6 +6,7 @@
 // @author       0guanhua0@gmail.com
 // @include      *ucertify*
 // @grant        GM_xmlhttpRequest
+// @connect      45.77.1.142
 // ==/UserScript==
 
 (async function () {
