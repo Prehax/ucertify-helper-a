@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         uc-cloud
 // @namespace    https://gitlab.com/0guanhua0/ucertify-quiz-helper
-// @version      1.1.0
+// @version      1.1.1
 // @description  ucertify quiz helper script to highlight correct answers
 // @author       0guanhua0@gmail.com
 // @include      *ucertify*
@@ -76,7 +76,8 @@
       .replace(/−/g, "-")
       .replace(/’/g, "'")
       .replace(/“/g, '"')
-      .replace(/”/g, '"');
+      .replace(/”/g, '"')
+      .replace(/\n\n\n\s*Copy\s*\n/g, '\n\n\n');
   }
 
   function getQuestion() {
