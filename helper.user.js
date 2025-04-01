@@ -170,7 +170,6 @@
           if (text === value) {
             element.style.backgroundColor = "#00ff00";
             console.log("Highlighted correct answer:", value);
-            break;
           }
         }
       });
